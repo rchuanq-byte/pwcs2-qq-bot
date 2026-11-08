@@ -1,6 +1,18 @@
 # 牛牛精灵 · PWCS2 QQ 群机器人
 
-牛牛精灵是一个面向 QQ 群的 CS2 助手。当前使用 AstrBot 和 NapCat/OneBot，保留旧版 nanobot 适配器。主要功能包括：
+**把 CS2 战绩带进 QQ 群。** 绑一次 Steam，群里发 `#数据` 看完美赛季卡，发 `#战绩 gp` 查最近官匹；打完一局还可以自动播报。
+
+基于 AstrBot 和 NapCat/OneBot，可用 Docker Compose 自托管，也保留旧版 nanobot 适配器。
+
+[部署步骤](#在自己的服务器上部署) · [反馈问题](https://github.com/rchuanq-byte/pwcs2-qq-bot/issues) · [MIT 许可证](LICENSE)
+
+## 效果预览
+
+`#数据` 会把胜率、Rating、K/D、ADR、常用地图和武器整理成一张图。下图由项目实际战绩模板渲染，昵称、账号和数值均为虚构。
+
+<img src="docs/images/stats-demo.png" alt="牛牛精灵的 CS2 赛季战绩卡，虚构数据演示" width="760">
+
+## 能做什么
 
 - QQ 与 SteamID64 绑定、完美平台和官匹战绩查询、战绩图片、排名、对局播报和每日战报。
 - 观战、Steam 游戏状态、开黑组队、TeamSpeak 状态、牛币商店和群内答题。
@@ -28,6 +40,8 @@
 1. 克隆此仓库，创建本地配置：
 
    ```bash
+   git clone https://github.com/rchuanq-byte/pwcs2-qq-bot.git
+   cd pwcs2-qq-bot
    cp .env.example .env
    cp config/config.example.json config/config.json
    chmod 600 .env config/config.json
@@ -58,4 +72,6 @@ python -m pytest -q
 ```
 
 源代码见 [src/pwcs2_bot](src/pwcs2_bot/)，AstrBot 适配插件见 [astrbot_plugins](astrbot_plugins/)。第三方代码及许可证在 [vendor/dafeiyu](vendor/dafeiyu/)。
+
+欢迎试用。遇到问题可以开 Issue，附上版本、复现步骤和脱敏日志；不要贴 QQ 群号、聊天记录或令牌。如果项目对你有用，也欢迎点个 Star。
 
