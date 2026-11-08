@@ -1,0 +1,44 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "/data/nanobot",
+      "modelPreset": "unused-local",
+      "timezone": "Asia/Shanghai",
+      "maxToolIterations": 1
+    }
+  },
+  "modelPresets": {
+    "unused-local": {"provider": "custom", "model": "unused"}
+  },
+  "providers": {
+    "custom": {
+      "apiKey": "unused",
+      "apiBase": "http://127.0.0.1:9/v1"
+    }
+  },
+  "channels": {
+    "pwcs2": {
+      "enabled": false,
+      "allowFrom": ["*"],
+      "allowedGroups": [],
+      "aiChatOnlyGroups": [],
+      "aiMentionOnlyGroups": [],
+      "wsUrl": "ws://napcat:3001",
+      "accessToken": "${NAPCAT_ONEBOT_TOKEN}",
+      "pwToken": "${PERFECTWORLD_TOKEN}",
+      "pwMySteamId": "${PERFECTWORLD_MY_STEAM_ID}",
+      "aiEnabled": false,
+      "aiApiKey": "${USTC_LLM_API_KEY}",
+      "aiBaseUrl": "https://api.llm.ustc.edu.cn/v1",
+      "trainingGameEnabled": false,
+      "xhReactionEnabled": false
+    }
+  },
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 18790
+  },
+  "tools": {
+    "restrictToWorkspace": true
+  }
+}

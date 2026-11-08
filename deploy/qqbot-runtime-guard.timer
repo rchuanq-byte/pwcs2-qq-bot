@@ -1,0 +1,11 @@
+[Unit]
+Description=Record QQ bot health once per minute
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+RandomizedDelaySec=5s
+Unit=qqbot-runtime-guard.service
+
+[Install]
+WantedBy=timers.target

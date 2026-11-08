@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+DOMAINS="${IWAN_PROXY_DOMAINS:-api.llm.ustc.edu.cn}"
+exec /usr/local/bin/iwan-client-oidc \
+  --connect \
+  --config-dir "${IWAN_CONFIG_DIR:-/home/admin/.config/iwan}" \
+  --proxy-domain "$DOMAINS" \
+  --tun "${IWAN_TUN:-iwan0}" \
+  <<<"${IWAN_LINE:-1}"

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Bind a source IP on the physical uplink without granting CAP_NET_ADMIN to
+# this rootless SOCKS process. No TUN, default route or system DNS changes.
+interface="${IWAN_PHYSICAL_INTERFACE:-eth0}"
+bind_ip="${IWAN_BIND_IP:-}"
+if [[ -z "$bind_ip" ]]; then
+  bind_ip="$(ip -o -4 addr show dev "$interface" scope global | awk 'NR==1 {split($4,a,"/"); print a[1]}')"
+fi
+[[ -n "$bind_ip" && "$bind_ip" != 0.0.0.0 ]] || {
+  echo 'Physical source IPv4 is unavailable; refusing an unbound connection.' >&2
+  exit 1
+}
+exec "${IWAN_CLIENT:-/usr/local/lib/qqbot-iwan/v26.9.1/iwan-client-oidc}" \
+  --connect --server "${IWAN_LINE:-1}" \
+  --config-dir "${IWAN_CONFIG_DIR:-/home/admin/.config/iwan}" \
+  --socks --socks-listen "${IWAN_PROXY_LISTEN:-172.18.0.1:18081}" \
+  --bind "$bind_ip" --proxy-mtu "${IWAN_PROXY_MTU:-1280}" \
+  --dns "${IWAN_DNS:-https://dns.alidns.com/dns-query}"

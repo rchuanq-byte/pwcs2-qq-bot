@@ -1,0 +1,32 @@
+[Unit]
+Description=QQ Bot private USTC campus SOCKS proxy (ustc-iwan v26.9.1)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+StartLimitIntervalSec=1800
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+EnvironmentFile=-/etc/qqbot-campus-proxy.env
+ExecStartPre=/usr/bin/test -r /home/admin/.config/iwan/servers.json
+ExecStart=/usr/local/sbin/qqbot-campus-proxy-start
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=10
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+PrivateDevices=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+MemoryMax=96M
+MemorySwapMax=32M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

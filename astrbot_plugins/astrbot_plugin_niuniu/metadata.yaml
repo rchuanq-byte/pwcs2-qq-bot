@@ -1,0 +1,8 @@
+name: astrbot_plugin_niuniu
+display_name: 牛牛精灵 · CS 与群务
+desc: 复用既有 CS、牛币和群务业务；提供统一权限、静默、原生媒体输入与只读 AI 统计工具。
+version: 1.0.0
+author: Niuniu maintainers
+astrbot_version: ">=4.29.3,<4.30"
+support_platforms:
+  - aiocqhttp

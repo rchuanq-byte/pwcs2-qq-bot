@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pwcs2-qq-bot"
+version = "0.1.0"
+description = "QQ group services with AstrBot and legacy nanobot adapters"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "aiohttp>=3.11,<4",
+  "httpx>=0.28,<1",
+  "jieba==0.42.1",
+  "playwright==1.60.0",
+  "websockets>=15,<17",
+]
+
+[project.optional-dependencies]
+legacy = [
+  "lark-oapi==1.5.5",
+  "nanobot-ai==0.2.2",
+  "openai==2.48.0",
+  "websockets>=16,<17",
+]
+pwa-demo = [
+  "cs-demo-downloader==1.1.0",
+  "demoparser2==0.41.4",
+]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.24,<1",
+  "ruff>=0.9,<1",
+]
+
+[project.entry-points."nanobot.channels"]
+pwcs2 = "pwcs2_bot.channel:PWCS2Channel"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pwcs2_bot"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]

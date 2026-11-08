@@ -1,0 +1,238 @@
+services:
+  napcat:
+    image: ${NAPCAT_IMAGE:-mlikiowa/napcat-docker:latest}
+    restart: unless-stopped
+    init: true
+    pids_limit: ${NAPCAT_PIDS_LIMIT:-256}
+    mem_limit: ${NAPCAT_MEMORY_LIMIT:-400m}
+    memswap_limit: ${NAPCAT_MEMORY_SWAP_LIMIT:-800m}
+    mem_reservation: ${NAPCAT_MEMORY_RESERVATION:-192m}
+    environment:
+      NAPCAT_UID: ${NAPCAT_UID:-1000}
+      NAPCAT_GID: ${NAPCAT_GID:-1000}
+      ACCOUNT: ${NAPCAT_ACCOUNT:-}
+    volumes:
+      - ./data/napcat/qq:/app/.config/QQ
+      - ./data/napcat/config:/app/napcat/config
+      - ./data/napcat/plugins:/app/napcat/plugins
+      - ./data/bot/highlights/renders:/app/highlights:ro
+    ports:
+      - "127.0.0.1:${NAPCAT_WEBUI_PORT:-6099}:6099"
+    networks:
+      - bot-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  bot:
+    image: ${PWCS2_IMAGE:-pwcs2-qq-bot:local}
+    build:
+      context: .
+      target: bot-runtime
+    restart: unless-stopped
+    init: true
+    pids_limit: ${BOT_PIDS_LIMIT:-256}
+    mem_limit: ${BOT_MEMORY_LIMIT:-800m}
+    memswap_limit: ${BOT_MEMORY_SWAP_LIMIT:-1600m}
+    mem_reservation: ${BOT_MEMORY_RESERVATION:-384m}
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    group_add:
+      - "${NAPCAT_GID:-1000}"
+    env_file:
+      - .env
+    # The bot needs most application settings from .env, but the third-party
+    # PWA signer and Windows Worker protocol never run in this container.
+    # Explicit values override env_file so those credentials are not exposed.
+    environment:
+      HIGHLIGHT_ENABLED: "${HIGHLIGHT_ENABLED:-0}"
+      PERFECTWORLD_PWA_ACCESS_TOKEN: ""
+      PWCS2_HIGHLIGHT_DATA_DIR: "${PWCS2_HIGHLIGHT_DATA_DIR:-/data/highlights}"
+      PWCS2_HIGHLIGHT_INTENT_DATABASE_PATH: "${PWCS2_HIGHLIGHT_INTENT_DATABASE_PATH:-/data/highlights/intents.db}"
+      PWCS2_HIGHLIGHT_MAX_VIDEO_BYTES: "${PWCS2_HIGHLIGHT_MAX_VIDEO_BYTES:-25165824}"
+      PWCS2_HIGHLIGHT_NAPCAT_MEDIA_ROOT: "${PWCS2_HIGHLIGHT_NAPCAT_MEDIA_ROOT:-}"
+      PWCS2_HIGHLIGHT_SHARED_OUTPUT_GID: "${PWCS2_HIGHLIGHT_SHARED_OUTPUT_GID:--1}"
+      PWCS2_HIGHLIGHT_WORKER_SECRETS_JSON: "{}"
+      PWCS2_PWA_DEMO_ENABLED: "0"
+    volumes:
+      - ./data/bot:/data
+      - ./config/config.json:/config/config.json:ro
+      - ../teamspeak3/.serverquery-password:/run/secrets/ts3_query_password:ro
+    depends_on:
+      - napcat
+    ports:
+      - "127.0.0.1:18790:18790"
+    # A live gateway is not enough: require the bot's active OneBot socket to
+    # report QQ online. Unhealthy does NOT automatically restart QQ or the bot.
+    healthcheck:
+      test: ["CMD", "python", "-m", "pwcs2_bot.healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks:
+      - bot-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  highlight-controller:
+    profiles: ["highlights"]
+    image: ${PWCS2_HIGHLIGHT_IMAGE:-pwcs2-qq-bot-highlight:local}
+    build:
+      context: .
+      target: highlight-controller-runtime
+      args:
+        PWA_WHEELHOUSE_URL: "${PWA_WHEELHOUSE_URL:-}"
+        PWA_WHEELHOUSE_TRUSTED_HOST: "${PWA_WHEELHOUSE_TRUSTED_HOST:-}"
+    pull_policy: never
+    command:
+      - python
+      - -m
+      - pwcs2_bot.highlight_controller
+    restart: unless-stopped
+    init: true
+    pids_limit: 96
+    # A real 312 MiB Demo reached ~547 MiB aggregate working set with production
+    # tick analysis; 384 MiB deterministically OOMs this workload.
+    mem_limit: ${HIGHLIGHT_CONTROLLER_MEMORY_LIMIT:-768m}
+    memswap_limit: ${HIGHLIGHT_CONTROLLER_MEMORY_SWAP_LIMIT:-1280m}
+    mem_reservation: 64m
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    group_add:
+      - "${NAPCAT_GID:-1000}"
+    # Keep the third-party PWA signer away from unrelated bot/API credentials.
+    environment:
+      PWCS2_PWA_DEMO_ENABLED: "${PWCS2_PWA_DEMO_ENABLED:-0}"
+      PERFECTWORLD_PWA_ACCESS_TOKEN: "${PERFECTWORLD_PWA_ACCESS_TOKEN:-}"
+      PWCS2_PWA_PUBLIC_IP: "${PWCS2_PWA_PUBLIC_IP:-}"
+      PERFECTWORLD_MY_STEAM_ID: "${PERFECTWORLD_MY_STEAM_ID:-}"
+      PWCS2_HIGHLIGHT_DATA_DIR: "${PWCS2_HIGHLIGHT_DATA_DIR:-/data/highlights}"
+      PWCS2_HIGHLIGHT_INTENT_DATABASE_PATH: "${PWCS2_HIGHLIGHT_INTENT_DATABASE_PATH:-/data/highlights/intents.db}"
+      PWCS2_HIGHLIGHT_MAX_BACKLOG_DEMOS: "${PWCS2_HIGHLIGHT_MAX_BACKLOG_DEMOS:-2}"
+      PWCS2_HIGHLIGHT_MAX_BACKLOG_DEMO_BYTES: "${PWCS2_HIGHLIGHT_MAX_BACKLOG_DEMO_BYTES:-2147483648}"
+      PWCS2_HIGHLIGHT_RENDERER_PATCH: "${PWCS2_HIGHLIGHT_RENDERER_PATCH:-}"
+      PWCS2_HIGHLIGHT_SHARED_OUTPUT_GID: "${PWCS2_HIGHLIGHT_SHARED_OUTPUT_GID:--1}"
+    volumes:
+      - "./data/bot/highlights:${PWCS2_HIGHLIGHT_DATA_DIR:-/data/highlights}"
+      - ./data/bot/demos:/data/demos
+      - ./data/bot/demo-import:/data/demo-import:ro
+    networks:
+      - bot-network
+    # This polling process intentionally exposes no HTTP endpoint.  Keep it
+    # healthy even if custom image metadata later adds the bot HTTP probe.
+    healthcheck:
+      disable: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  highlight-api:
+    profiles: ["highlights"]
+    image: ${PWCS2_IMAGE:-pwcs2-qq-bot:local}
+    pull_policy: never
+    command:
+      - python
+      - -m
+      - pwcs2_bot.highlight_api
+      - --host
+      - 0.0.0.0
+    restart: unless-stopped
+    init: true
+    pids_limit: 64
+    mem_limit: 160m
+    memswap_limit: 256m
+    mem_reservation: 48m
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    group_add:
+      - "${NAPCAT_GID:-1000}"
+    environment:
+      PWCS2_HIGHLIGHT_ALLOW_CONTAINER_BIND: "1"
+      PWCS2_HIGHLIGHT_WORKER_SECRETS_JSON: "${PWCS2_HIGHLIGHT_WORKER_SECRETS_JSON:-}"
+      PWCS2_HIGHLIGHT_DATA_DIR: "${PWCS2_HIGHLIGHT_DATA_DIR:-/data/highlights}"
+      PWCS2_HIGHLIGHT_MAX_VIDEO_BYTES: "${PWCS2_HIGHLIGHT_MAX_VIDEO_BYTES:-25165824}"
+      PWCS2_HIGHLIGHT_SHARED_OUTPUT_GID: "${PWCS2_HIGHLIGHT_SHARED_OUTPUT_GID:--1}"
+    volumes:
+      - "./data/bot/highlights:${PWCS2_HIGHLIGHT_DATA_DIR:-/data/highlights}"
+    ports:
+      - "127.0.0.1:${HIGHLIGHT_API_PORT:-18791}:18791"
+    networks:
+      - bot-network
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; socket.create_connection(('127.0.0.1', 18791), 3).close()"
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  steam-mihomo:
+    profiles: ["steam-proxy"]
+    image: ${STEAM_MIHOMO_IMAGE:-pwcs2-steam-mihomo:1.19.29}
+    build:
+      context: ./data/mihomo/image
+    pull_policy: never
+    restart: unless-stopped
+    init: true
+    user: "${NAPCAT_UID:-1000}:${NAPCAT_GID:-1000}"
+    command:
+      - -d
+      - /var/lib/mihomo
+      - -f
+      - /run/secrets/steam-mihomo.yaml
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 256m
+    volumes:
+      - ./data/mihomo/config.yaml:/run/secrets/steam-mihomo.yaml:ro
+      - ./data/mihomo/runtime:/var/lib/mihomo
+    expose:
+      - "7890"
+    networks:
+      - bot-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+networks:
+  bot-network:
+    driver: bridge

@@ -1,0 +1,28 @@
+[Unit]
+Description=Publish anonymous Niuniu community homepage snapshot
+
+[Service]
+Type=oneshot
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/pwcs2-qq-bot
+ExecStart=/usr/bin/python3 /home/admin/pwcs2-qq-bot/deploy/export-community-home.py --database /home/admin/pwcs2-qq-bot/data/bot/bindings.db --health /var/lib/qqbot-runtime-guard/status.json --health-kind guard --group-id 100000021 --catalog /home/admin/pwcs2-qq-bot/src/pwcs2_bot/community.py --output /home/admin/teamspeak3/assets/niuniu/snapshot.json
+TimeoutStartSec=12
+MemoryMax=48M
+MemorySwapMax=0
+CPUQuota=20%
+TasksMax=16
+Nice=10
+UMask=0022
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/admin/teamspeak3/assets/niuniu
+RestrictAddressFamilies=AF_UNIX
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true

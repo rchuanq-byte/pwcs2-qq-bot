@@ -1,0 +1,14 @@
+# Roll back only the gateway; keep data and all unrelated services untouched.
+# docker compose -f compose.yaml -f compose.override.yaml -f deploy/compose.nanobot-rollback.yaml up -d --no-deps --no-build bot
+services:
+  bot:
+    image: pwcs2-qq-bot:quiet-20261026
+    build:
+      dockerfile: Dockerfile
+      target: bot-runtime
+    command: ["nanobot", "gateway", "--config", "/data/config.json"]
+  data-init:
+    image: pwcs2-qq-bot:quiet-20261026
+    build:
+      dockerfile: Dockerfile
+      target: bot-runtime

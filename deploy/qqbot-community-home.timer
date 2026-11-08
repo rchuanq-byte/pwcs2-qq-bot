@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh the anonymous Niuniu homepage once per minute
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=qqbot-community-home.service
+
+[Install]
+WantedBy=timers.target

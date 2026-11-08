@@ -1,0 +1,11 @@
+# Low-I/O deployment for code-only fixes. BASE_IMAGE must be a saved, known-good
+# local runtime image for the corresponding service. Dependency changes still
+# require the normal Dockerfile build; never use this to update dependencies.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+# A private checkout may use umask 077. The unprivileged runtime must own the
+# source instead of inheriting root-owned files that it cannot read.
+COPY --chown=bot:bot src /app/src
+ENV PYTHONPATH=/app/src
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION}

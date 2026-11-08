@@ -1,0 +1,19 @@
+[Unit]
+Description=QQ bot runtime health and memory observations (no automatic restarts)
+After=docker.service
+
+[Service]
+Type=oneshot
+User=admin
+Group=admin
+SupplementaryGroups=docker
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /home/admin/pwcs2-qq-bot/deploy/runtime_guard.py
+StateDirectory=qqbot-runtime-guard
+StateDirectoryMode=0700
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+TimeoutStartSec=45
+MemoryMax=64M

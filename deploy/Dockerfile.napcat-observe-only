@@ -1,0 +1,31 @@
+# Build context contains only these files and the two verified public packages.
+# Never include .env, the QQ profile, or the bot database in this context.
+ARG BASE_IMAGE=pwcs2-napcat:rollback-20261021
+FROM ${BASE_IMAGE}
+
+USER root
+COPY linuxqq.deb /tmp/linuxqq.deb
+COPY xdg-utils.deb /tmp/xdg-utils.deb
+RUN echo 'd085dd89397225061eb9f194308f688129818ed445777e97a4a0a16e13d7b0e8  /tmp/linuxqq.deb' | sha256sum -c - \
+    && echo 'ee4139344b50386d95d925b389713096538fe90ff33637ef6631c4566c4d0985  /tmp/xdg-utils.deb' | sha256sum -c - \
+    && test "$(dpkg-deb -f /tmp/linuxqq.deb Version)" = '3.2.32-52194' \
+    && dpkg -i /tmp/xdg-utils.deb /tmp/linuxqq.deb \
+    && rm /tmp/linuxqq.deb /tmp/xdg-utils.deb
+
+# Generated from the official v4.18.38 archive by napcat_observe_only.py.
+# That preparer verifies the upstream SHA256 and all patch preconditions.
+COPY NapCat.Shell.observe-only.zip /app/NapCat.Shell.zip
+COPY napcat-load.js /opt/QQ/resources/app/loadNapCat.js
+ARG PREPARED_ARCHIVE_SHA256
+RUN test -n "$PREPARED_ARCHIVE_SHA256" \
+    && echo "$PREPARED_ARCHIVE_SHA256  /app/NapCat.Shell.zip" | sha256sum -c - \
+    && python3 -c 'import json; from pathlib import Path; p=Path("/opt/QQ/resources/app/package.json"); d=json.loads(p.read_text()); d["main"]="./loadNapCat.js"; p.write_text(json.dumps(d))' \
+    && mkdir -p /app/napcat \
+    && unzip -q /app/NapCat.Shell.zip -d /app/napcat
+
+COPY napcat-observe-entrypoint.sh /app/observe-entrypoint.sh
+LABEL org.niuniu.napcat.version="4.18.38" \
+      org.niuniu.qq.version="3.2.32-52194" \
+      org.niuniu.login-recovery="observe-only"
+ENV NAPCAT_ENABLE_COREDUMP=0
+ENTRYPOINT ["bash", "/app/observe-entrypoint.sh"]

@@ -1,0 +1,18 @@
+# Explicit final overlay: compose.yaml + compose.override.yaml + this file.
+# Only `bot` is recreated. NapCat, TS, campus/Singapore networking remain untouched.
+services:
+  bot:
+    image: pwcs2-astrbot:20261026
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.astrbot
+      target: astrbot-runtime
+    command: ["python", "/opt/niuniu/astrbot_bootstrap.py"]
+    user: "10001:10001"
+    environment:
+      NIUNIU_BUSINESS_CONFIG: /config/config.json
+      NIUNIU_STAGE: "0"
+    volumes:
+      - ./data/astrbot:/AstrBot/data
+    ports:
+      - "127.0.0.1:6185:6185"

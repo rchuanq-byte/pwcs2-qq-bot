@@ -1,0 +1,5 @@
+name: dsh-video
+desc: 视频插件。自动抽帧理解群视频；提供 generate_video 与 /做视频 的后台出片；群友明确描述动态视觉片段时可低概率主动生成概念短片并询问是否符合描述。带全局限流、会话/主动冷却与严格误触发否决。
+author: 大肥鱼
+version: 1.1.0
+repo: local
